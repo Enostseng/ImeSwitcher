@@ -118,6 +118,7 @@ tests\run_tests.bat    :: 轉換回歸測試
 | `tools/gen_icon.py` | 產生程式圖示的腳本 |
 | `tests/` | 回歸測試與預期結果 |
 | `CHANGELOG.md`、`TEST_REPORT.md` | 版本紀錄、實機測試紀錄 |
+| `CLAUDE.md` | 給 Claude／協作者的專案總覽、開發規則、發新版 SOP |
 
 ## 授權
 
