@@ -1,0 +1,57 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      CI: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build (Windows built-in csc.exe)
+        shell: cmd
+        run: call build.bat
+
+      - name: Regression tests
+        shell: cmd
+        run: call tests\run_tests.bat
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $ver = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME } else { 'dev' }
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item ImeSwitcher.exe dist/
+          Compress-Archive -Path ImeSwitcher.exe, LICENSE, NOTICE.md, README.md -DestinationPath "dist/ImeSwitcher_$ver.zip"
+          $lines = Get-ChildItem dist -File | Sort-Object Name | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          }
+          $lines | Set-Content dist/SHA256SUMS.txt -Encoding ascii
+          $body = Get-Content .github/release-template.md -Raw -Encoding utf8
+          $body = $body.Replace('{{VERSION}}', $ver).Replace('{{SHA256}}', ($lines -join "`n"))
+          Set-Content release_body.md -Value $body -Encoding utf8
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ImeSwitcher
+          path: dist/*
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: IME 繁簡切換器 ${{ github.ref_name }}
+          body_path: release_body.md
+          files: dist/*

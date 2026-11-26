@@ -1,0 +1,8 @@
+# 編譯產物
+ImeSwitcher.exe
+build.log
+dist/
+release_body.md
+
+# 測試輸出
+tests/out_*.txt
